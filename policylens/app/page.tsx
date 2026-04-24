@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FEATURED_BILLS } from "@/data/bills";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Scale, Eye, BookOpen, Zap, GitCompare, Flame } from "lucide-react";
+import { BillSearch } from "@/components/BillSearch";
 
 function BillCard({ bill }: { bill: (typeof FEATURED_BILLS)[0] }) {
   const partyColors: Record<string, string> = {
@@ -124,12 +125,14 @@ export default function Home() {
             disagreements are.
           </p>
 
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
             <FeatureChip icon={BookOpen} label="Plain English Breakdown" color="bg-blue-50 text-blue-700" />
             <FeatureChip icon={GitCompare} label="Left / Center / Right Perspectives" color="bg-purple-50 text-purple-700" />
             <FeatureChip icon={Flame} label="Where Disagreement Actually Is" color="bg-orange-50 text-orange-700" />
             <FeatureChip icon={Zap} label="AI-Powered Analysis" color="bg-green-50 text-green-700" />
           </div>
+
+          <BillSearch />
         </div>
       </div>
 

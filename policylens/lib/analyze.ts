@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { Mistral } from "@mistralai/mistralai";
 import { BillAnalysis } from "@/types";
 
-const client = new Anthropic();
+const client = new Mistral({ apiKey: process.env.MISTRAL_API_KEY, timeoutMs: 120_000 });
 
 const ANALYSIS_PROMPT = (billTitle: string, billText: string) => `
 You are a nonpartisan policy analyst. Analyze the following bill and return a JSON object with this exact structure. Be factual, balanced, and cite real ideological perspectives accurately.
@@ -99,9 +99,8 @@ export async function analyzeBill(
   billTitle: string,
   billText: string
 ): Promise<BillAnalysis> {
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 4000,
+  const response = await client.chat.complete({
+    model: "mistral-large-latest",
     messages: [
       {
         role: "user",
@@ -110,12 +109,12 @@ export async function analyzeBill(
     ],
   });
 
-  const content = message.content[0];
-  if (content.type !== "text") {
-    throw new Error("Unexpected response type from Claude");
+  const content = response.choices?.[0]?.message?.content;
+  if (typeof content !== "string") {
+    throw new Error("Unexpected response from Mistral");
   }
 
-  const jsonText = content.text.trim();
+  const jsonText = content.trim().replace(/^```json\n?/, "").replace(/\n?```$/, "");
   const analysis: BillAnalysis = JSON.parse(jsonText);
   return analysis;
 }
