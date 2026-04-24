@@ -9,6 +9,7 @@ import { PerspectiveCard } from "@/components/PerspectiveCard";
 import { ControversySection } from "@/components/ControversySection";
 import { BeforeYouVote } from "@/components/BeforeYouVote";
 import { ImpactBadge } from "@/components/ImpactBadge";
+import { ImpactCalculator } from "@/components/ImpactCalculator";
 import {
   BookOpen,
   Users,
@@ -18,6 +19,7 @@ import {
   Zap,
   ArrowLeft,
   Calendar,
+  UserCircle,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -183,6 +185,10 @@ export function BillAnalysisClient({ bill }: Props) {
                   <CheckSquare className="h-3.5 w-3.5" />
                   Before You Vote
                 </TabsTrigger>
+                <TabsTrigger value="impact" className="flex items-center gap-1.5 text-sm rounded-lg">
+                  <UserCircle className="h-3.5 w-3.5" />
+                  My Impact
+                </TabsTrigger>
               </TabsList>
 
               {/* Breakdown Tab */}
@@ -281,6 +287,11 @@ export function BillAnalysisClient({ bill }: Props) {
                 <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
                   <BeforeYouVote items={analysis.beforeYouVote} />
                 </div>
+              </TabsContent>
+
+              {/* My Impact Tab */}
+              <TabsContent value="impact">
+                <ImpactCalculator billId={bill.id} />
               </TabsContent>
             </Tabs>
           </>

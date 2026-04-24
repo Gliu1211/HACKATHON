@@ -31,8 +31,8 @@ export interface BillSearchResult {
 }
 
 export async function searchBills(query: string): Promise<BillSearchResult[]> {
-  const url = `${BASE}/bill?query=${encodeURIComponent(query)}&format=json&limit=10&api_key=${key()}`;
-  const res = await fetch(url, { next: { revalidate: 300 } });
+  const url = `${BASE}/bill?query=${encodeURIComponent(query)}&format=json&limit=10&sort=updateDate+desc&api_key=${key()}`;
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Congress API error: ${res.status}`);
   const data = await res.json();
   const bills: CongressBill[] = data.bills ?? [];
