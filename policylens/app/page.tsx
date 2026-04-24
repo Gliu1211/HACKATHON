@@ -1,65 +1,68 @@
 import Link from "next/link";
 import { FEATURED_BILLS } from "@/data/bills";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Scale, Eye, BookOpen, Zap, GitCompare, Flame } from "lucide-react";
+import { ArrowRight, Scale, Eye, BookOpen, Zap, GitCompare, Flame, Shield } from "lucide-react";
 import { BillSearch } from "@/components/BillSearch";
 
 function BillCard({ bill }: { bill: (typeof FEATURED_BILLS)[0] }) {
-  const partyColors: Record<string, string> = {
-    D: "bg-blue-100 text-blue-800",
-    R: "bg-red-100 text-red-800",
-    I: "bg-gray-100 text-gray-800",
+  const partyConfig: Record<string, { bg: string; text: string }> = {
+    D: { bg: "bg-blue-500", text: "text-white" },
+    R: { bg: "bg-red-500", text: "text-white" },
+    I: { bg: "bg-slate-500", text: "text-white" },
+  };
+  const statusConfig: Record<string, { dot: string; color: string }> = {
+    "Signed into Law": { dot: "bg-emerald-400", color: "text-emerald-700" },
+    "Passed House":    { dot: "bg-amber-400",   color: "text-amber-700"   },
+    "In Committee":   { dot: "bg-slate-400",   color: "text-slate-500"   },
   };
 
-  const statusColors: Record<string, string> = {
-    "Signed into Law": "bg-green-100 text-green-800 border-green-200",
-    "Passed House": "bg-yellow-100 text-yellow-800 border-yellow-200",
-    "In Committee": "bg-gray-100 text-gray-800 border-gray-200",
-  };
+  const party  = partyConfig[bill.sponsorParty]  ?? partyConfig["I"];
+  const status = statusConfig[bill.status] ?? { dot: "bg-slate-400", color: "text-slate-500" };
 
   return (
-    <Link href={`/bill/${bill.id}`} className="group block">
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="font-mono text-xs text-gray-600">
+    <Link href={`/bill/${bill.id}`} className="group block h-full">
+      <div className="h-full bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-xl hover:border-indigo-300 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        {/* top row */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="space-y-1.5">
+            <span className="font-mono text-xs font-bold text-slate-400 tracking-widest uppercase">
               {bill.billNumber}
-            </Badge>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full border ${statusColors[bill.status] || "bg-gray-100 text-gray-800"}`}
-            >
-              {bill.status}
             </span>
+            <div className="flex items-center gap-1.5">
+              <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+              <span className={`text-xs font-semibold ${status.color}`}>{bill.status}</span>
+            </div>
           </div>
-          <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all shrink-0" />
+          <div className="bg-slate-100 rounded-full p-2 group-hover:bg-indigo-100 transition-colors shrink-0">
+            <ArrowRight className="h-3.5 w-3.5 text-slate-400 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all" />
+          </div>
         </div>
 
-        <h3 className="font-bold text-gray-900 mb-2 group-hover:text-indigo-700 transition-colors">
+        <h3 className="font-bold text-lg text-slate-900 mb-2 group-hover:text-indigo-700 transition-colors leading-snug">
           {bill.shortTitle}
         </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{bill.summary}</p>
+        <p className="text-sm text-slate-500 mb-5 line-clamp-3 leading-relaxed flex-1">{bill.summary}</p>
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* bottom row */}
+        <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100">
           <div className="flex flex-wrap gap-1.5">
             {bill.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full"
-              >
+              <span key={tag} className="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium">
                 {tag}
               </span>
             ))}
             {bill.tags.length > 3 && (
-              <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+              <span className="text-xs px-2.5 py-1 bg-slate-100 text-slate-400 rounded-full">
                 +{bill.tags.length - 3}
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <span className={`px-1.5 py-0.5 rounded font-bold ${partyColors[bill.sponsorParty]}`}>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`h-6 w-6 rounded-full ${party.bg} ${party.text} text-xs font-black flex items-center justify-center`}>
               {bill.sponsorParty}
             </span>
-            <span>{bill.sponsor}</span>
+            <span className="text-xs text-slate-400 truncate max-w-[80px]">
+              {bill.sponsor.split(" ").slice(-1)[0]}
+            </span>
           </div>
         </div>
       </div>
@@ -67,133 +70,140 @@ function BillCard({ bill }: { bill: (typeof FEATURED_BILLS)[0] }) {
   );
 }
 
-function FeatureChip({
-  icon: Icon,
-  label,
-  color,
-}: {
-  icon: React.ElementType;
-  label: string;
-  color: string;
-}) {
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${color}`}>
-      <Icon className="h-3.5 w-3.5" />
-      {label}
-    </div>
-  );
-}
-
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-indigo-600 p-1.5 rounded-lg">
-              <Scale className="h-5 w-5 text-white" />
+    <div className="min-h-screen bg-slate-50">
+
+      {/* ── Navbar ── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-1.5 rounded-lg shadow-lg shadow-indigo-500/30">
+              <Scale className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-xl text-gray-900">PolicyLens</span>
+            <span className="font-black text-lg text-white tracking-tight">PolicyLens</span>
           </div>
-          <div className="flex items-center gap-3 text-sm text-gray-500">
-            <span className="hidden sm:flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-              Powered by Claude AI
-            </span>
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Powered by AI
           </div>
         </div>
       </nav>
 
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-16 text-center">
-          <div className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 text-indigo-700 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
-            <Eye className="h-4 w-4" />
-            Nonpartisan bill analysis
+      {/* ── Hero ── */}
+      <div className="relative bg-slate-900 pt-16 overflow-hidden">
+        {/* dot grid */}
+        <div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: "radial-gradient(circle at 1px 1px, rgb(148 163 184) 1px, transparent 0)",
+            backgroundSize: "32px 32px",
+          }}
+        />
+        {/* glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative max-w-4xl mx-auto px-4 pt-20 pb-16 text-center">
+          {/* badge */}
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 px-4 py-1.5 rounded-full text-xs font-semibold mb-8 tracking-widest uppercase">
+            <Eye className="h-3.5 w-3.5" />
+            Nonpartisan Bill Analysis
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-black text-gray-900 mb-4 tracking-tight">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-white mb-5 tracking-tight leading-[1.04]">
             Democracy works when{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-pink-400">
               people understand
             </span>{" "}
             what they&apos;re deciding.
           </h1>
 
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-            We&apos;re not telling you what to think. We&apos;re showing you what you&apos;re
-            missing — plain English breakdowns, every perspective, and where the real
-            disagreements are.
+          <p className="text-lg text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+            Not telling you what to think — showing you what you&apos;re missing. Plain English breakdowns,
+            every perspective, and where the real disagreements are.
           </p>
 
+          {/* feature chips */}
           <div className="flex flex-wrap justify-center gap-2 mb-10">
-            <FeatureChip icon={BookOpen} label="Plain English Breakdown" color="bg-blue-50 text-blue-700" />
-            <FeatureChip icon={GitCompare} label="Left / Center / Right Perspectives" color="bg-purple-50 text-purple-700" />
-            <FeatureChip icon={Flame} label="Where Disagreement Actually Is" color="bg-orange-50 text-orange-700" />
-            <FeatureChip icon={Zap} label="AI-Powered Analysis" color="bg-green-50 text-green-700" />
+            {[
+              { icon: BookOpen,    label: "Plain English",        color: "text-blue-400   bg-blue-500/10   border-blue-500/20"   },
+              { icon: GitCompare,  label: "Left · Center · Right", color: "text-violet-400 bg-violet-500/10 border-violet-500/20" },
+              { icon: Flame,       label: "Core Disagreements",    color: "text-orange-400 bg-orange-500/10 border-orange-500/20" },
+              { icon: Zap,         label: "AI-Powered",            color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"},
+            ].map(({ icon: Icon, label, color }) => (
+              <span key={label} className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs font-semibold ${color}`}>
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </span>
+            ))}
           </div>
 
-          <BillSearch />
+          {/* search */}
+          <div className="max-w-2xl mx-auto">
+            <BillSearch />
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Featured Bills</h2>
-          <p className="text-gray-600">
-            Select a bill to see an AI-generated nonpartisan analysis with multiple perspectives.
+      {/* ── Featured Bills ── */}
+      <div className="max-w-6xl mx-auto px-4 py-16">
+        <div className="mb-10 text-center">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="h-px w-12 bg-slate-300" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-400">Featured Bills</span>
+            <div className="h-px w-12 bg-slate-300" />
+          </div>
+          <h2 className="text-3xl font-black text-slate-900">Select a bill to see the full analysis</h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            AI-generated nonpartisan breakdowns with real perspectives from across the political spectrum.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {FEATURED_BILLS.map((bill) => (
             <BillCard key={bill.id} bill={bill} />
           ))}
         </div>
       </div>
 
-      <div className="bg-white border-t border-gray-200 mt-8">
-        <div className="max-w-6xl mx-auto px-4 py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">How PolicyLens Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* ── How it works ── */}
+      <div className="bg-white border-y border-slate-200">
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <h2 className="text-2xl font-black text-slate-900 mb-12 text-center">How PolicyLens Works</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             {[
-              {
-                step: "1",
-                title: "Reads the actual bill",
-                desc: "We start with the real legislative text, not media summaries. Claude AI reads the full bill.",
-                color: "bg-blue-100 text-blue-700",
-              },
-              {
-                step: "2",
-                title: "Breaks it down neutrally",
-                desc: "Plain English summary of what changes, who it affects, and what the key provisions are.",
-                color: "bg-purple-100 text-purple-700",
-              },
-              {
-                step: "3",
-                title: "Shows every perspective",
-                desc: "Left, center, and right views based on real published positions from think tanks and advocacy groups.",
-                color: "bg-orange-100 text-orange-700",
-              },
+              { step: "01", icon: BookOpen,   gradient: "from-blue-500 to-indigo-500",    title: "Reads the actual bill",       desc: "Starts with the real legislative text — not media summaries. AI reads the full bill." },
+              { step: "02", icon: Shield,      gradient: "from-violet-500 to-purple-500",  title: "Breaks it down neutrally",    desc: "Plain English summary of what changes, who it affects, and what key provisions mean." },
+              { step: "03", icon: GitCompare,  gradient: "from-orange-500 to-red-500",     title: "Shows every perspective",     desc: "Left, center, and right views — based on real published positions from think tanks." },
             ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className={`w-12 h-12 rounded-2xl ${item.color} text-xl font-black flex items-center justify-center mx-auto mb-4`}>
+              <div key={item.step} className="relative">
+                <span className="absolute top-0 right-0 text-6xl font-black text-slate-100 leading-none select-none">
                   {item.step}
+                </span>
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${item.gradient} flex items-center justify-center mb-5 shadow-lg`}>
+                  <item.icon className="h-6 w-6 text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600">{item.desc}</p>
+                <h3 className="font-bold text-lg text-slate-900 mb-2">{item.title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <footer className="border-t border-gray-200 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm text-gray-500">
-          <p className="font-medium text-gray-700 mb-1">
-            &ldquo;Democracy isn&apos;t failing because people disagree. It&apos;s failing because
-            people don&apos;t understand what they&apos;re disagreeing about.&rdquo;
+      {/* ── Footer ── */}
+      <footer className="bg-slate-900">
+        <div className="max-w-6xl mx-auto px-4 py-10 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-1.5 rounded-lg">
+              <Scale className="h-4 w-4 text-white" />
+            </div>
+            <span className="font-black text-white">PolicyLens</span>
+          </div>
+          <p className="text-sm text-slate-500 italic max-w-xl mx-auto">
+            &ldquo;Democracy isn&apos;t failing because people disagree. It&apos;s failing because people don&apos;t understand what they&apos;re disagreeing about.&rdquo;
           </p>
-          <p>PolicyLens — Built for clarity, not consensus.</p>
+          <p className="text-xs text-slate-700 mt-4">Built for clarity, not consensus.</p>
         </div>
       </footer>
     </div>
