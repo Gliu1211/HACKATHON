@@ -1,13 +1,15 @@
 "use client";
 
-import { ControversialSection } from "@/types";
+import { Citation, ControversialSection } from "@/types";
 import { Flame } from "lucide-react";
+import { claimCitationIds, claimText, SourceTrace } from "@/components/SourceTrace";
 
 interface Props {
   sections: ControversialSection[];
+  citations: Citation[];
 }
 
-export function ControversySection({ sections }: Props) {
+export function ControversySection({ sections, citations }: Props) {
   return (
     <div className="space-y-4">
       {sections.map((section, i) => (
@@ -22,19 +24,28 @@ export function ControversySection({ sections }: Props) {
                 <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
                 <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Left View</span>
               </div>
-              <p className="text-sm text-gray-700">{section.leftView}</p>
+              <p className="text-sm text-gray-700">{claimText(section.leftView)}</p>
+              <SourceTrace citations={citations} ids={claimCitationIds(section.leftView)} />
             </div>
             <div className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
                 <span className="text-xs font-bold uppercase tracking-wide text-red-700">Right View</span>
               </div>
-              <p className="text-sm text-gray-700">{section.rightView}</p>
+              <p className="text-sm text-gray-700">{claimText(section.rightView)}</p>
+              <SourceTrace citations={citations} ids={claimCitationIds(section.rightView)} />
             </div>
           </div>
           <div className="px-4 py-3 bg-orange-100 border-t border-orange-200">
             <span className="text-xs font-bold uppercase tracking-wide text-orange-700">Core Disagreement: </span>
-            <span className="text-sm text-gray-700">{section.coreDisagreement}</span>
+            <span className="text-sm text-gray-700">{claimText(section.coreDisagreement)}</span>
+            <SourceTrace citations={citations} ids={claimCitationIds(section.coreDisagreement)} />
+          </div>
+          <div className="px-4 py-3 bg-white border-t border-orange-100">
+            <span className="text-xs font-bold uppercase tracking-wide text-orange-700">Bill Section: </span>
+            <span className="text-sm text-gray-700">{section.billSection}</span>
+            <p className="mt-1 text-sm text-gray-700">{claimText(section.whyControversial)}</p>
+            <SourceTrace citations={citations} ids={section.citations} />
           </div>
         </div>
       ))}

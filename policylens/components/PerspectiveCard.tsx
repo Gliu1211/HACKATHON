@@ -1,12 +1,13 @@
 "use client";
 
-import { PerspectiveView, SourceRef } from "@/types";
-import { Badge } from "@/components/ui/badge";
+import { Citation, PerspectiveView, SourceRef } from "@/types";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { claimCitationIds, claimText, SourceTrace } from "@/components/SourceTrace";
 
 interface Props {
   lean: "left" | "center" | "right";
   perspective: PerspectiveView;
+  citations: Citation[];
 }
 
 const LEAN_CONFIG = {
@@ -57,7 +58,7 @@ function SourceBadge({ source }: { source: SourceRef }) {
   );
 }
 
-export function PerspectiveCard({ lean, perspective }: Props) {
+export function PerspectiveCard({ lean, perspective, citations }: Props) {
   const config = LEAN_CONFIG[lean];
   const supportInfo = SUPPORT_ICONS[perspective.supportLevel];
   const SupportIcon = supportInfo.icon;
@@ -72,7 +73,7 @@ export function PerspectiveCard({ lean, perspective }: Props) {
             <span className="text-xs font-medium">{supportInfo.label}</span>
           </div>
         </div>
-        <p className="text-white/80 text-sm mt-1 italic">&ldquo;{perspective.framing}&rdquo;</p>
+        <p className="text-white/80 text-sm mt-1 italic">&ldquo;{claimText(perspective.framing)}&rdquo;</p>
       </div>
 
       <div className="p-4 flex flex-col gap-4 flex-1">
@@ -82,9 +83,12 @@ export function PerspectiveCard({ lean, perspective }: Props) {
           </h4>
           <ul className="space-y-1.5">
             {perspective.keyArguments.map((arg, i) => (
-              <li key={i} className="flex gap-2 text-sm text-gray-700">
-                <span className={`mt-1.5 h-1.5 w-1.5 rounded-full ${config.dot} shrink-0`} />
-                {arg}
+              <li key={i} className="text-sm text-gray-700">
+                <div className="flex gap-2">
+                  <span className={`mt-1.5 h-1.5 w-1.5 rounded-full ${config.dot} shrink-0`} />
+                  <span>{claimText(arg)}</span>
+                </div>
+                <SourceTrace citations={citations} ids={claimCitationIds(arg)} />
               </li>
             ))}
           </ul>
@@ -96,9 +100,12 @@ export function PerspectiveCard({ lean, perspective }: Props) {
           </h4>
           <ul className="space-y-1.5">
             {perspective.concerns.map((c, i) => (
-              <li key={i} className="flex gap-2 text-sm text-gray-600">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
-                {c}
+              <li key={i} className="text-sm text-gray-600">
+                <div className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
+                  <span>{claimText(c)}</span>
+                </div>
+                <SourceTrace citations={citations} ids={claimCitationIds(c)} />
               </li>
             ))}
           </ul>

@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Environment
+
+Create `.env.local` with:
+
+```bash
+MISTRAL_API_KEY=your_mistral_key
+MISTRAL_MODEL=mistral-large-latest
+CONGRESS_API_KEY=your_congress_gov_key
+```
+
+`MISTRAL_API_KEY` powers the grounded analysis. `ANTHROPIC_API_KEY` can also be used as a fallback if Mistral is not configured. `CONGRESS_API_KEY` lets PolicyLens fetch official bill text from Congress.gov before falling back to locally provided bill text.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

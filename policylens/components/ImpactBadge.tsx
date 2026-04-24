@@ -1,7 +1,9 @@
-import { KeyProvision } from "@/types";
+import { Citation, KeyProvision } from "@/types";
+import { SourceTrace } from "@/components/SourceTrace";
 
 interface Props {
   provision: KeyProvision;
+  citations: Citation[];
 }
 
 const impactColors = {
@@ -16,7 +18,7 @@ const impactDots = {
   low: "bg-green-500",
 };
 
-export function ImpactBadge({ provision }: Props) {
+export function ImpactBadge({ provision, citations }: Props) {
   return (
     <div className="flex items-start gap-3 p-3.5 rounded-lg border border-gray-200 bg-white">
       <span className={`mt-1.5 h-2.5 w-2.5 rounded-full shrink-0 ${impactDots[provision.impact]}`} />
@@ -28,6 +30,7 @@ export function ImpactBadge({ provision }: Props) {
           </span>
         </div>
         <p className="text-sm text-gray-600 mt-0.5">{provision.description}</p>
+        <SourceTrace citations={citations} ids={provision.citations} />
       </div>
     </div>
   );
