@@ -275,7 +275,23 @@ function validateCitationIds(analysis: BillAnalysis, allowedIds: Set<string>) {
     .filter((citation): citation is Citation => Boolean(citation));
 }
 
-export async function analyzeBill(input: AnalysisInput): Promise<BillAnalysis> {
+export async function analyzeBill(input: AnalysisInput): Promise<BillAnalysis>;
+export async function analyzeBill(billTitle: string, billText: string): Promise<BillAnalysis>;
+export async function analyzeBill(
+  inputOrTitle: AnalysisInput | string,
+  maybeBillText?: string
+): Promise<BillAnalysis> {
+  const input: AnalysisInput =
+    typeof inputOrTitle === "string"
+      ? {
+          billTitle: inputOrTitle,
+          billText: {
+            text: maybeBillText ?? "",
+            sourceType: "provided_bill_text",
+          },
+        }
+      : inputOrTitle;
+
   if (!process.env.MISTRAL_API_KEY && !process.env.ANTHROPIC_API_KEY) {
     throw new Error("MISTRAL_API_KEY or ANTHROPIC_API_KEY is required for bill analysis");
   }

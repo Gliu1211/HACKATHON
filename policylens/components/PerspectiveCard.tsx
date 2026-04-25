@@ -1,8 +1,8 @@
 "use client";
 
 import { Citation, PerspectiveView, SourceRef } from "@/types";
-import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { claimCitationIds, claimText, SourceTrace } from "@/components/SourceTrace";
+import { CheckCircle2, MinusCircle, XCircle } from "lucide-react";
 
 interface Props {
   lean: "left" | "center" | "right";
@@ -10,82 +10,64 @@ interface Props {
   citations: Citation[];
 }
 
-const LEAN_CONFIG = {
-  left: {
-    label: "Progressive / Left",
-    color: "bg-blue-50 border-blue-200",
-    headerBg: "bg-blue-600",
-    badgeColor: "bg-blue-100 text-blue-800",
-    accent: "text-blue-700",
-    dot: "bg-blue-500",
-  },
-  center: {
-    label: "Centrist / Nonpartisan",
-    color: "bg-purple-50 border-purple-200",
-    headerBg: "bg-purple-600",
-    badgeColor: "bg-purple-100 text-purple-800",
-    accent: "text-purple-700",
-    dot: "bg-purple-500",
-  },
-  right: {
-    label: "Conservative / Right",
-    color: "bg-red-50 border-red-200",
-    headerBg: "bg-red-600",
-    badgeColor: "bg-red-100 text-red-800",
-    accent: "text-red-700",
-    dot: "bg-red-500",
-  },
+const LEAN = {
+  left: { label: "Progressive", sub: "Left-leaning", grad: "from-blue-600 to-blue-700", border: "border-blue-200", dot: "bg-blue-500" },
+  center: { label: "Centrist", sub: "Nonpartisan", grad: "from-violet-600 to-purple-700", border: "border-violet-200", dot: "bg-violet-500" },
+  right: { label: "Conservative", sub: "Right-leaning", grad: "from-red-600 to-red-700", border: "border-red-200", dot: "bg-red-500" },
 };
 
-const SUPPORT_ICONS = {
-  "strong support": { icon: CheckCircle, color: "text-green-600", label: "Strong Support" },
-  "lean support": { icon: CheckCircle, color: "text-green-500", label: "Lean Support" },
-  mixed: { icon: AlertCircle, color: "text-yellow-500", label: "Mixed" },
-  "lean oppose": { icon: XCircle, color: "text-red-500", label: "Lean Oppose" },
-  "strong oppose": { icon: XCircle, color: "text-red-600", label: "Strong Oppose" },
+const SUPPORT = {
+  "strong support": { Icon: CheckCircle2, label: "Strong Support" },
+  "lean support": { Icon: CheckCircle2, label: "Lean Support" },
+  mixed: { Icon: MinusCircle, label: "Mixed" },
+  "lean oppose": { Icon: XCircle, label: "Lean Oppose" },
+  "strong oppose": { Icon: XCircle, label: "Strong Oppose" },
 };
 
-function SourceBadge({ source }: { source: SourceRef }) {
-  const leanColors = {
-    left: "bg-blue-100 text-blue-700 border-blue-200",
-    center: "bg-purple-100 text-purple-700 border-purple-200",
-    right: "bg-red-100 text-red-700 border-red-200",
+function SourcePill({ source }: { source: SourceRef }) {
+  const colors = {
+    left: "bg-blue-50 text-blue-700 border-blue-200",
+    center: "bg-violet-50 text-violet-700 border-violet-200",
+    right: "bg-red-50 text-red-700 border-red-200",
   };
   return (
-    <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${leanColors[source.lean]}`}>
+    <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${colors[source.lean]}`}>
       {source.name}
     </span>
   );
 }
 
 export function PerspectiveCard({ lean, perspective, citations }: Props) {
-  const config = LEAN_CONFIG[lean];
-  const supportInfo = SUPPORT_ICONS[perspective.supportLevel];
-  const SupportIcon = supportInfo.icon;
+  const cfg = LEAN[lean];
+  const support = SUPPORT[perspective.supportLevel] ?? SUPPORT.mixed;
+  const { Icon } = support;
 
   return (
-    <div className={`rounded-xl border-2 ${config.color} overflow-hidden flex flex-col`}>
-      <div className={`${config.headerBg} px-4 py-3 text-white`}>
-        <div className="flex items-center justify-between">
-          <span className="font-bold text-sm tracking-wide uppercase">{config.label}</span>
-          <div className={`flex items-center gap-1 text-white/90`}>
-            <SupportIcon className="h-4 w-4" />
-            <span className="text-xs font-medium">{supportInfo.label}</span>
+    <div className={`flex flex-col overflow-hidden rounded-2xl border-2 bg-white shadow-sm transition-shadow hover:shadow-md ${cfg.border}`}>
+      <div className={`bg-gradient-to-br px-5 py-4 text-white ${cfg.grad}`}>
+        <div className="mb-2 flex items-center justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-white/60">{cfg.sub}</p>
+            <h3 className="mt-0.5 text-xl font-black leading-none">{cfg.label}</h3>
+          </div>
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-white/15 px-2.5 py-1.5">
+            <Icon className="h-3.5 w-3.5" />
+            <span className="text-xs font-bold">{support.label}</span>
           </div>
         </div>
-        <p className="text-white/80 text-sm mt-1 italic">&ldquo;{claimText(perspective.framing)}&rdquo;</p>
+        <blockquote className="mt-3 border-l-2 border-white/30 pl-3 text-sm italic leading-relaxed text-white/75">
+          &ldquo;{claimText(perspective.framing)}&rdquo;
+        </blockquote>
       </div>
 
-      <div className="p-4 flex flex-col gap-4 flex-1">
+      <div className="flex flex-1 flex-col gap-5 p-5">
         <div>
-          <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${config.accent}`}>
-            Key Arguments
-          </h4>
-          <ul className="space-y-1.5">
+          <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-slate-400">Key Arguments</h4>
+          <ul className="space-y-2.5">
             {perspective.keyArguments.map((arg, i) => (
-              <li key={i} className="text-sm text-gray-700">
-                <div className="flex gap-2">
-                  <span className={`mt-1.5 h-1.5 w-1.5 rounded-full ${config.dot} shrink-0`} />
+              <li key={i} className="text-sm leading-snug text-slate-700">
+                <div className="flex gap-2.5">
+                  <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} />
                   <span>{claimText(arg)}</span>
                 </div>
                 <SourceTrace citations={citations} ids={claimCitationIds(arg)} />
@@ -95,27 +77,25 @@ export function PerspectiveCard({ lean, perspective, citations }: Props) {
         </div>
 
         <div>
-          <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${config.accent}`}>
-            Concerns / Criticisms
-          </h4>
-          <ul className="space-y-1.5">
-            {perspective.concerns.map((c, i) => (
-              <li key={i} className="text-sm text-gray-600">
-                <div className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" />
-                  <span>{claimText(c)}</span>
+          <h4 className="mb-3 text-xs font-black uppercase tracking-widest text-slate-300">Concerns</h4>
+          <ul className="space-y-2.5">
+            {perspective.concerns.map((concern, i) => (
+              <li key={i} className="text-sm leading-snug text-slate-500">
+                <div className="flex gap-2.5">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-slate-300" />
+                  <span>{claimText(concern)}</span>
                 </div>
-                <SourceTrace citations={citations} ids={claimCitationIds(c)} />
+                <SourceTrace citations={citations} ids={claimCitationIds(concern)} />
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="mt-auto pt-3 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-1.5 font-medium">Citing sources from:</p>
+        <div className="mt-auto border-t border-slate-100 pt-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Citing</p>
           <div className="flex flex-wrap gap-1.5">
-            {perspective.sources.map((s, i) => (
-              <SourceBadge key={i} source={s} />
+            {perspective.sources.map((source, i) => (
+              <SourcePill key={i} source={source} />
             ))}
           </div>
         </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Loader2, ArrowRight, FileText } from "lucide-react";
+import { ArrowRight, FileText, Loader2, Search } from "lucide-react";
 import { BillSearchResult } from "@/lib/congress";
 
 export function BillSearch() {
@@ -15,10 +15,9 @@ export function BillSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (query.length < 2) {
-      return;
-    }
+    if (query.length < 2) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
+
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
@@ -48,13 +47,6 @@ export function BillSearch() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function selectBill(bill: BillSearchResult) {
-    setOpen(false);
-    setQuery("");
-    setResults([]);
-    router.push(`/bill/${bill.id}`);
-  }
-
   function handleQueryChange(value: string) {
     setQuery(value);
     if (value.length < 2) {
@@ -63,63 +55,71 @@ export function BillSearch() {
     }
   }
 
+  function selectBill(bill: BillSearchResult) {
+    setOpen(false);
+    setQuery("");
+    setResults([]);
+    router.push(`/bill/${bill.id}`);
+  }
+
   const partyColors: Record<string, string> = {
     D: "bg-blue-100 text-blue-800",
     R: "bg-red-100 text-red-800",
   };
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-2xl mx-auto">
+    <div ref={containerRef} className="relative mx-auto w-full max-w-2xl">
       <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
-          placeholder="Search any bill — e.g. &quot;infrastructure&quot;, &quot;health care&quot;, &quot;H.R. 1&quot;"
-          className="w-full pl-12 pr-12 py-4 rounded-2xl border border-gray-200 bg-white shadow-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent text-sm"
+          onFocus={() => results.length > 0 && setOpen(true)}
+          placeholder={'Search any bill - "infrastructure", "health care", "H.R. 1"...'}
+          className="w-full rounded-2xl border border-white/20 bg-white/10 py-4 pl-12 pr-12 text-sm text-white shadow-lg backdrop-blur-sm placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-indigo-400"
         />
-        {loading && (
-          <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 animate-spin" />
-        )}
+        {loading ? (
+          <Loader2 className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-slate-400" />
+        ) : null}
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+        <div className="absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
           {results.map((bill) => (
             <button
               key={bill.id}
               onClick={() => selectBill(bill)}
-              className="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors border-b border-gray-100 last:border-0 flex items-start gap-3 group"
+              className="group flex w-full items-start gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors last:border-0 hover:bg-indigo-50"
             >
-              <FileText className="h-4 w-4 text-gray-400 shrink-0 mt-0.5 group-hover:text-indigo-500" />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+              <FileText className="mt-0.5 h-4 w-4 shrink-0 text-gray-400 group-hover:text-indigo-500" />
+              <div className="min-w-0 flex-1">
+                <div className="mb-0.5 flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-gray-500">{bill.billNumber}</span>
                   {bill.sponsorParty && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded font-bold ${partyColors[bill.sponsorParty] ?? "bg-gray-100 text-gray-700"}`}>
+                    <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${partyColors[bill.sponsorParty] ?? "bg-gray-100 text-gray-700"}`}>
                       {bill.sponsorParty}
                     </span>
                   )}
                   {bill.policyArea && (
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
+                    <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
                       {bill.policyArea}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-800 line-clamp-1">{bill.title}</p>
+                <p className="line-clamp-1 text-sm text-gray-800">{bill.title}</p>
                 {bill.latestAction && (
-                  <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{bill.latestAction}</p>
+                  <p className="mt-0.5 line-clamp-1 text-xs text-gray-400">{bill.latestAction}</p>
                 )}
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-indigo-400 shrink-0 mt-0.5" />
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-gray-300 group-hover:text-indigo-400" />
             </button>
           ))}
         </div>
       )}
 
       {open && !loading && results.length === 0 && query.length >= 2 && (
-        <div className="absolute z-50 w-full mt-2 bg-white rounded-2xl border border-gray-200 shadow-xl px-4 py-6 text-center text-sm text-gray-500">
+        <div className="absolute z-50 mt-2 w-full rounded-2xl border border-gray-200 bg-white px-4 py-6 text-center text-sm text-gray-500 shadow-xl">
           No bills found for &ldquo;{query}&rdquo;
         </div>
       )}

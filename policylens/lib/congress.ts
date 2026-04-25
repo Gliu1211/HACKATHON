@@ -101,9 +101,38 @@ function parseBillNumber(billNumber: string) {
 }
 
 export async function searchBills(query: string): Promise<BillSearchResult[]> {
-  const url = withApiKey(new URL(`${BASE}/bill`));
-  url.searchParams.set("query", query);
-  url.searchParams.set("limit", "10");
+  const trimmed = query.trim();
+  const billNumMatch = trimmed.match(
+    /^(h\.?\s*r\.?|s\.?|h\.?\s*res\.?|s\.?\s*res\.?|h\.?\s*j\.?\s*res\.?|s\.?\s*j\.?\s*res\.?|h\.?\s*con\.?\s*res\.?|s\.?\s*con\.?\s*res\.?)\s*(\d+)$/i
+  );
+
+  if (billNumMatch) {
+    const rawType = billNumMatch[1].replace(/[\s.]/g, "").toUpperCase();
+    const number = billNumMatch[2];
+    const typeMap: Record<string, string> = {
+      HR: "hr",
+      S: "s",
+      HRES: "hres",
+      SRES: "sres",
+      HJRES: "hjres",
+      SJRES: "sjres",
+      HCONRES: "hconres",
+      SCONRES: "sconres",
+    };
+    const type = typeMap[rawType] ?? "hr";
+
+    for (const congress of [119, 118, 117]) {
+      const bill = await getBillById(congress, type, number);
+      if (bill) return [bill];
+    }
+    return [];
+  }
+
+  const keywords = trimmed.toLowerCase().split(/\s+/).filter((word) => word.length > 2);
+  if (!keywords.length) return [];
+
+  const url = withApiKey(new URL(`${BASE}/bill/119`));
+  url.searchParams.set("limit", "250");
   url.searchParams.set("sort", "updateDate+desc");
 
   const res = await fetch(url, { cache: "no-store" });
@@ -111,7 +140,10 @@ export async function searchBills(query: string): Promise<BillSearchResult[]> {
 
   const data = await res.json();
   const bills: CongressBill[] = data.bills ?? [];
-  return bills.map(normalizeBill);
+  return bills
+    .filter((bill) => keywords.some((keyword) => bill.title?.toLowerCase().includes(keyword)))
+    .slice(0, 10)
+    .map(normalizeBill);
 }
 
 export async function getBillById(
