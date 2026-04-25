@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getBillById } from "@/data/bills";
+import { getBillById as getLocalBill } from "@/data/bills";
 import { analyzeBill } from "@/lib/analyze";
-import { fetchOfficialBillText } from "@/lib/congress";
+import {
+  fetchOfficialBillText,
+  fetchOfficialBillTextByParams,
+  getBillById as getCgovBill,
+  getBillSummary,
+  parseCgovId,
+} from "@/lib/congress";
 import { Bill, CredibleSource } from "@/types";
 
-async function getGroundedBillText(
-  bill: Bill,
-  customText?: string
-) {
+export const maxDuration = 120;
+
+async function getGroundedBillText(bill: Bill, customText?: string) {
   if (customText) {
     return {
       text: customText,
@@ -29,9 +34,7 @@ async function getGroundedBillText(
     };
   }
 
-  if (!bill.fullText) {
-    return null;
-  }
+  if (!bill.fullText) return null;
 
   return {
     text: bill.fullText,
@@ -40,39 +43,92 @@ async function getGroundedBillText(
   };
 }
 
+async function getGroundedCgovText(congress: number, type: string, number: string) {
+  const [bill, summary, officialText] = await Promise.all([
+    getCgovBill(congress, type, number),
+    getBillSummary(congress, type, number),
+    fetchOfficialBillTextByParams(congress, type, number).catch((error) => {
+      console.warn("Could not fetch official Congress.gov text:", error);
+      return null;
+    }),
+  ]);
+
+  if (!bill) return null;
+
+  if (officialText) {
+    return {
+      billTitle: bill.title,
+      billText: {
+        text: officialText.text,
+        sourceType: "official_bill_text" as const,
+        url: officialText.url,
+      },
+    };
+  }
+
+  const fallbackText = [
+    `Bill: ${bill.billNumber} - ${bill.title}`,
+    `Sponsor: ${bill.sponsor} (${bill.sponsorParty}-${bill.sponsorState})`,
+    `Latest Action: ${bill.latestAction}`,
+    "",
+    "Congress.gov Official Summary:",
+    summary,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  if (!fallbackText.trim()) return null;
+
+  return {
+    billTitle: bill.title,
+    billText: {
+      text: fallbackText,
+      sourceType: "provided_bill_text" as const,
+      url: undefined,
+    },
+  };
+}
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const bill = getBillById(id);
 
-  if (!bill) {
-    return NextResponse.json({ error: "Bill not found" }, { status: 404 });
+  let billTitle: string;
+  let billText: Awaited<ReturnType<typeof getGroundedBillText>>;
+  let credibleSources: CredibleSource[] | undefined;
+
+  if (id.startsWith("cgov_")) {
+    const { congress, type, number } = parseCgovId(id);
+    const grounded = await getGroundedCgovText(congress, type, number);
+    if (!grounded) {
+      return NextResponse.json({ error: "Bill not found" }, { status: 404 });
+    }
+
+    billTitle = grounded.billTitle;
+    billText = grounded.billText;
+  } else {
+    const bill = getLocalBill(id);
+    if (!bill) {
+      return NextResponse.json({ error: "Bill not found" }, { status: 404 });
+    }
+
+    billTitle = bill.title;
+    billText = await getGroundedBillText(bill);
+    credibleSources = bill.credibleSources;
   }
 
-  const billText = await getGroundedBillText(bill);
-
   if (!billText) {
-    return NextResponse.json(
-      { error: "No bill text available" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No bill text available" }, { status: 400 });
   }
 
   try {
-    const analysis = await analyzeBill({
-      billTitle: bill.title,
-      billText,
-      credibleSources: bill.credibleSources,
-    });
+    const analysis = await analyzeBill({ billTitle, billText, credibleSources });
     return NextResponse.json(analysis);
   } catch (err) {
     console.error("Analysis error:", err);
-    return NextResponse.json(
-      { error: "Failed to analyze bill" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to analyze bill" }, { status: 500 });
   }
 }
 
@@ -84,13 +140,9 @@ export async function POST(
   const body = await req.json().catch(() => ({}));
   const customText: string | undefined = body.text;
 
-  let billTitle: string;
-  let billText: Awaited<ReturnType<typeof getGroundedBillText>>;
-  let credibleSources: CredibleSource[] | undefined;
-
   if (id === "custom" && customText) {
-    billTitle = body.title || "Custom Bill";
-    billText = await getGroundedBillText(
+    const billTitle = body.title || "Custom Bill";
+    const billText = await getGroundedBillText(
       {
         id: "custom",
         title: billTitle,
@@ -107,31 +159,19 @@ export async function POST(
       },
       customText
     );
-  } else {
-    const bill = getBillById(id);
-    if (!bill) {
-      return NextResponse.json({ error: "Bill not found" }, { status: 404 });
+
+    if (!billText) {
+      return NextResponse.json({ error: "No bill text available" }, { status: 400 });
     }
-    billTitle = bill.title;
-    billText = await getGroundedBillText(bill);
-    credibleSources = bill.credibleSources;
+
+    try {
+      const analysis = await analyzeBill({ billTitle, billText });
+      return NextResponse.json(analysis);
+    } catch (err) {
+      console.error("Analysis error:", err);
+      return NextResponse.json({ error: "Failed to analyze bill" }, { status: 500 });
+    }
   }
 
-  if (!billText) {
-    return NextResponse.json(
-      { error: "No bill text available" },
-      { status: 400 }
-    );
-  }
-
-  try {
-    const analysis = await analyzeBill({ billTitle, billText, credibleSources });
-    return NextResponse.json(analysis);
-  } catch (err) {
-    console.error("Analysis error:", err);
-    return NextResponse.json(
-      { error: "Failed to analyze bill" },
-      { status: 500 }
-    );
-  }
+  return GET(req, { params: Promise.resolve({ id }) });
 }

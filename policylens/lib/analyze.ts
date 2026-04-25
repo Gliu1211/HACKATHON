@@ -225,12 +225,7 @@ async function callAnthropic(prompt: string) {
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
     max_tokens: 7000,
     temperature: 0,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
+    messages: [{ role: "user", content: prompt }],
   });
 
   const content = message.content[0];
@@ -291,6 +286,7 @@ export async function analyzeBill(input: AnalysisInput): Promise<BillAnalysis> {
   const responseText = process.env.MISTRAL_API_KEY
     ? await callMistral(prompt)
     : await callAnthropic(prompt);
+
   const analysis = JSON.parse(extractJson(responseText)) as BillAnalysis;
   analysis.citations = citations;
   validateCitationIds(analysis, allowedIds);

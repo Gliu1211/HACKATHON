@@ -10,6 +10,7 @@ import { PerspectiveCard } from "@/components/PerspectiveCard";
 import { ControversySection } from "@/components/ControversySection";
 import { BeforeYouVote } from "@/components/BeforeYouVote";
 import { ImpactBadge } from "@/components/ImpactBadge";
+import { ImpactCalculator } from "@/components/ImpactCalculator";
 import {
   claimCitationIds,
   claimText,
@@ -24,6 +25,7 @@ import {
   Flame,
   GitCompare,
   ShieldCheck,
+  UserCircle,
   User,
   Users,
   Zap,
@@ -236,6 +238,10 @@ export function BillAnalysisClient({ bill }: Props) {
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Sources
                 </TabsTrigger>
+                <TabsTrigger value="impact" className="flex items-center gap-1.5 text-sm rounded-lg">
+                  <UserCircle className="h-3.5 w-3.5" />
+                  My Impact
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="breakdown" className="space-y-6">
@@ -345,6 +351,10 @@ export function BillAnalysisClient({ bill }: Props) {
                   </p>
                 </div>
                 <SourceSnippetList citations={analysis.citations} />
+              </TabsContent>
+
+              <TabsContent value="impact">
+                <ImpactCalculator billId={bill.id} />
               </TabsContent>
             </Tabs>
           </>
