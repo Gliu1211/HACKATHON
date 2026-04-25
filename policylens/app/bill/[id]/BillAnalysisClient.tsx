@@ -8,9 +8,11 @@ import { ControversySection } from "@/components/ControversySection";
 import { BeforeYouVote } from "@/components/BeforeYouVote";
 import { ImpactBadge } from "@/components/ImpactBadge";
 import { ImpactCalculator } from "@/components/ImpactCalculator";
+import { PoliticiansTab } from "@/components/PoliticiansTab";
 import {
   BookOpen, Users, GitCompare, Flame, CheckSquare,
   Zap, ArrowLeft, Calendar, User, Scale, UserCircle,
+  Loader2, Sparkles, MessageSquareQuote,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -65,17 +67,22 @@ function AnalysisSkeleton() {
 }
 
 const TABS = [
-  { value: "breakdown",    icon: BookOpen,    label: "Breakdown"       },
-  { value: "perspectives", icon: GitCompare,  label: "Perspectives"    },
-  { value: "controversy",  icon: Flame,       label: "Disagreements"   },
-  { value: "vote",         icon: CheckSquare, label: "Before You Vote" },
-  { value: "impact",       icon: UserCircle,  label: "My Impact"       },
+  { value: "breakdown",    icon: BookOpen,           label: "Breakdown"       },
+  { value: "perspectives", icon: GitCompare,          label: "Perspectives"    },
+  { value: "controversy",  icon: Flame,               label: "Disagreements"   },
+  { value: "politicians",  icon: MessageSquareQuote,  label: "Politicians"     },
+  { value: "vote",         icon: CheckSquare,         label: "Before You Vote" },
+  { value: "impact",       icon: UserCircle,          label: "My Impact"       },
 ];
 
 export function BillAnalysisClient({ bill }: Props) {
   const [analysis, setAnalysis] = useState<BillAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
+
+  const [eli5, setEli5] = useState<string | null>(null);
+  const [eli5Loading, setEli5Loading] = useState(false);
+  const [showEli5, setShowEli5] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -93,13 +100,25 @@ export function BillAnalysisClient({ bill }: Props) {
 
   useEffect(() => { load(); }, [bill.id]);
 
+  async function loadEli5() {
+    if (eli5) { setShowEli5(true); return; }
+    setEli5Loading(true);
+    try {
+      const res = await fetch(`/api/eli5/${bill.id}`);
+      const data = await res.json();
+      if (data.explanation) { setEli5(data.explanation); setShowEli5(true); }
+    } finally {
+      setEli5Loading(false);
+    }
+  }
+
   const party  = partyConfig[bill.sponsorParty]  ?? partyConfig["I"];
   const status = statusConfig[bill.status] ?? { dot: "bg-slate-400", label: bill.status, labelColor: "text-slate-400" };
 
   return (
     <div className="min-h-screen bg-slate-50">
 
-      {/* ── Sticky nav ── */}
+      {/* Sticky nav */}
       <nav className="sticky top-0 z-20 bg-slate-900/90 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
           <Link href="/" className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-colors">
@@ -120,9 +139,8 @@ export function BillAnalysisClient({ bill }: Props) {
 
       <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
 
-        {/* ── Bill header card ── */}
+        {/* Bill header card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* dark banner */}
           <div className="bg-gradient-to-br from-slate-800 to-slate-900 px-6 py-6">
             <div className="flex flex-wrap items-center gap-3 mb-3">
               <span className="font-mono text-xs font-bold text-slate-500 tracking-widest uppercase">
@@ -134,11 +152,9 @@ export function BillAnalysisClient({ bill }: Props) {
                 <span className={`text-xs font-semibold ${status.labelColor}`}>{status.label}</span>
               </div>
             </div>
-
             <h1 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-4">
               {bill.title}
             </h1>
-
             <div className="flex flex-wrap items-center gap-5 text-sm text-slate-400">
               <div className="flex items-center gap-2">
                 <User className="h-3.5 w-3.5" />
@@ -154,8 +170,6 @@ export function BillAnalysisClient({ bill }: Props) {
               </div>
             </div>
           </div>
-
-          {/* summary strip */}
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
             <p className="text-sm text-slate-600 leading-relaxed">{bill.summary}</p>
             <div className="flex flex-wrap gap-2 mt-3">
@@ -168,7 +182,6 @@ export function BillAnalysisClient({ bill }: Props) {
           </div>
         </div>
 
-        {/* ── Loading ── */}
         {loading && (
           <div>
             <div className="flex items-center gap-3 mb-5 px-1">
@@ -181,7 +194,6 @@ export function BillAnalysisClient({ bill }: Props) {
           </div>
         )}
 
-        {/* ── Error ── */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
             <p className="text-red-800 font-bold mb-1">{error}</p>
@@ -198,20 +210,31 @@ export function BillAnalysisClient({ bill }: Props) {
           </div>
         )}
 
-        {/* ── Analysis ── */}
         {analysis && (
           <>
-            {/* TL;DR */}
+            {/* TL;DR with ELI5 toggle */}
             <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 rounded-2xl p-6 text-white shadow-lg shadow-indigo-500/20">
               <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
-              <div className="relative flex items-start gap-4">
-                <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
-                  <Zap className="h-5 w-5" />
+              <div className="relative flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                    <Zap className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2">TL;DR — Plain English Summary</p>
+                    <p className="text-white text-lg leading-relaxed font-medium">
+                      {showEli5 && eli5 ? eli5 : analysis.tldr}
+                    </p>
+                    {showEli5 && <p className="text-white/40 text-xs mt-2">Simplified — tap button to switch back</p>}
+                  </div>
                 </div>
-                <div>
-                  <p className="text-indigo-200 text-xs font-bold uppercase tracking-widest mb-2">TL;DR — Plain English Summary</p>
-                  <p className="text-white text-lg leading-relaxed font-medium">{analysis.tldr}</p>
-                </div>
+                <button
+                  onClick={() => showEli5 ? setShowEli5(false) : loadEli5()}
+                  className="flex items-center gap-1.5 text-xs font-semibold bg-white/15 hover:bg-white/25 transition-colors px-3 py-2 rounded-xl shrink-0"
+                >
+                  {eli5Loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {showEli5 ? "Original" : "ELI12"}
+                </button>
               </div>
             </div>
 
@@ -222,8 +245,7 @@ export function BillAnalysisClient({ bill }: Props) {
                   <TabsTrigger
                     key={value}
                     value={value}
-                    className="flex items-center gap-1.5 text-sm rounded-lg px-3 py-2 font-medium
-                      data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                    className="flex items-center gap-1.5 text-sm rounded-lg px-3 py-2 font-medium data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
                   >
                     <Icon className="h-3.5 w-3.5" />
                     {label}
@@ -274,11 +296,9 @@ export function BillAnalysisClient({ bill }: Props) {
                     </div>
                   ))}
                 </div>
-
                 <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
                   <h3 className="font-bold text-xs uppercase tracking-widest text-slate-500 mb-4 flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                    Key Provisions
+                    <span className="h-2 w-2 rounded-full bg-indigo-500" />Key Provisions
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {analysis.keyProvisions.map((p, i) => <ImpactBadge key={i} provision={p} />)}
@@ -309,6 +329,11 @@ export function BillAnalysisClient({ bill }: Props) {
                   </p>
                 </div>
                 <ControversySection sections={analysis.controversialSections} />
+              </TabsContent>
+
+              {/* Politicians */}
+              <TabsContent value="politicians">
+                <PoliticiansTab billId={bill.id} />
               </TabsContent>
 
               {/* Before You Vote */}

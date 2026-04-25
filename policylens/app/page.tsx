@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FEATURED_BILLS } from "@/data/bills";
-import { ArrowRight, Scale, Eye, BookOpen, Zap, GitCompare, Flame, Shield } from "lucide-react";
+import { ArrowRight, Scale, Eye, BookOpen, Zap, GitCompare, Flame, Shield, FileText } from "lucide-react";
 import { BillSearch } from "@/components/BillSearch";
 
 function BillCard({ bill }: { bill: (typeof FEATURED_BILLS)[0] }) {
@@ -141,6 +141,15 @@ export default function Home() {
           {/* search */}
           <div className="max-w-2xl mx-auto">
             <BillSearch />
+            <div className="mt-4 text-center">
+              <Link
+                href="/analyze"
+                className="inline-flex items-center gap-2 text-sm text-indigo-300 hover:text-white font-medium transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                Or paste your own bill text →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

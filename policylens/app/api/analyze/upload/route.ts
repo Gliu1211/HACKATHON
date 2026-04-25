@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
   if (isPdf) {
     try {
       // Dynamic import avoids Next.js build-time issues with pdf-parse test files
-      const pdfParse = (await import("pdf-parse")).default;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pdfParse = ((await import("pdf-parse")) as any).default ?? (await import("pdf-parse"));
       const pdf = await pdfParse(buffer);
       text = pdf.text;
     } catch {

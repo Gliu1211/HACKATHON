@@ -30,13 +30,45 @@ export interface BillSearchResult {
   policyArea: string;
 }
 
+// Congress.gov /v3/bill does not support keyword search — we parse bill numbers
+// directly and do client-side title filtering on the current congress batch.
 export async function searchBills(query: string): Promise<BillSearchResult[]> {
-  const url = `${BASE}/bill?query=${encodeURIComponent(query)}&format=json&limit=10&sort=updateDate+desc&api_key=${key()}`;
+  const trimmed = query.trim();
+
+  // Bill number pattern: "HR 1", "H.R. 1", "S 234", "HRes 5", "H.Con.Res. 42", etc.
+  const billNumMatch = trimmed.match(
+    /^(h\.?\s*r\.?|s\.?|h\.?\s*res\.?|s\.?\s*res\.?|h\.?\s*j\.?\s*res\.?|s\.?\s*j\.?\s*res\.?|h\.?\s*con\.?\s*res\.?|s\.?\s*con\.?\s*res\.?)\s*(\d+)$/i
+  );
+
+  if (billNumMatch) {
+    const rawType = billNumMatch[1].replace(/[\s.]/g, "").toUpperCase();
+    const number = billNumMatch[2];
+    const TYPE_MAP: Record<string, string> = {
+      HR: "hr", S: "s", HRES: "hres", SRES: "sres",
+      HJRES: "hjres", SJRES: "sjres", HCONRES: "hconres", SCONRES: "sconres",
+    };
+    const type = TYPE_MAP[rawType] ?? "hr";
+    for (const congress of [119, 118, 117]) {
+      const bill = await getBillById(congress, type, number);
+      if (bill) return [bill];
+    }
+    return [];
+  }
+
+  // Keyword search: fetch 250 most recent bills from current congress, filter by title
+  const keywords = trimmed.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+  if (!keywords.length) return [];
+
+  const url = `${BASE}/bill/119?format=json&limit=250&sort=updateDate+desc&api_key=${key()}`;
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error(`Congress API error: ${res.status}`);
   const data = await res.json();
   const bills: CongressBill[] = data.bills ?? [];
-  return bills.map(normalizeBill);
+
+  return bills
+    .filter(b => keywords.some(kw => b.title.toLowerCase().includes(kw)))
+    .slice(0, 10)
+    .map(normalizeBill);
 }
 
 export async function getBillById(
